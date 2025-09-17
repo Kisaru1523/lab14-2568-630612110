@@ -16,9 +16,10 @@ import { useForm } from "@mantine/form";
 import { useMarathonFormStore } from "../store/MarathonFormStore";
 import { zod4Resolver } from "mantine-form-zod-resolver";
 import { marathonSchema } from "../zod/MarathonSchema";
+import { useEffect, useState } from "react";
 import { type MarathonModalProps } from "../libs/Marathon";
-
 export default function MarathonModal({ opened, onClose }: MarathonModalProps) {
+  const [agree, setAgree] = useState(false);
   const {
     fname,
     lname,
@@ -46,23 +47,26 @@ export default function MarathonModal({ opened, onClose }: MarathonModalProps) {
   // Mantine Form
   const mantineForm = useForm({
     initialValues: {
-      fname,
-      lname,
-      plan,
-      gender,
-      email,
-      couponCode,
-      haveCoupon,
-      password,
-      confirmpassword,
-      total,
-      agree: false,
+     fname,
+    lname,
+    plan,
+    gender,
+    email,
+    couponCode,
+    haveCoupon,
+    password,
+    confirmpassword,
+    total,
+    agree: false,
     },
     validate: zod4Resolver(marathonSchema),
     validateInputOnChange: true,
   });
+  // update Zustand form real-time
+  useEffect(() => {}, []);
 
   const onSubmitRegister = () => {
+    //  alert หลังจาก กด Register
     alert("See you at CMU Marathon");
     onClose();
     reset();
@@ -78,45 +82,63 @@ export default function MarathonModal({ opened, onClose }: MarathonModalProps) {
     >
       <form onSubmit={mantineForm.onSubmit(onSubmitRegister)}>
         <Stack>
-          {/* First + Last name */}
           <Group justify="space-between" gap="xs" grow>
             <TextInput
               label="First name"
               withAsterisk
-              {...mantineForm.getInputProps("fname")}
+              value={fname}
+              onChange={(e) => {
+                setFname(e.currentTarget.value);
+                mantineForm.setFieldValue("fname", e.currentTarget.value);
+              }}
+              error={mantineForm.errors.fname}
             />
             <TextInput
               label="Last name"
               withAsterisk
-              {...mantineForm.getInputProps("lname")}
+              value={lname}
+              onChange={(e) => {
+                setLname(e.currentTarget.value);
+                mantineForm.setFieldValue("lname", e.currentTarget.value);
+              }}
+              error={mantineForm.errors.lname}
             />
           </Group>
-
-          {/* Email */}
           <TextInput
             label="Email"
             withAsterisk
             description="ex.excemble@email.com"
-            {...mantineForm.getInputProps("email")}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.currentTarget.value);
+              mantineForm.setFieldValue("email", e.currentTarget.value);
+            }}
+            error={mantineForm.errors.email}
           />
-
-          {/* Password */}
+          {/* PasswordInput */}
           <PasswordInput
             label="Password"
-            description="Password must contain 6-12 characters"
+            description="Password must contain 6-12 charaters"
             withAsterisk
-            {...mantineForm.getInputProps("password")}
+            value={password}
+            onChange={(e)=> {
+              setPassword(e.currentTarget.value);
+              mantineForm.setFieldValue("password",e.currentTarget.value);
+            }}
+            error={mantineForm.errors.password}
+            
           />
-
-          {/* Confirm Password */}
           <PasswordInput
             label="Confirm Password"
-            description="Confirm your password"
+            description="Confirm Password"
             withAsterisk
-            {...mantineForm.getInputProps("confirmpassword")}
+            value={confirmpassword}
+            onChange={(e) =>{
+              setConfirmPassword(e.currentTarget.value)
+              mantineForm.setFieldValue("confirmpassword",e.currentTarget.value)
+            }}
+            error={mantineForm.errors.confirmpassword}
           />
-
-          {/* Plan */}
           <Select
             label="Plan"
             placeholder="Please select.."
@@ -126,59 +148,62 @@ export default function MarathonModal({ opened, onClose }: MarathonModalProps) {
               { value: "half", label: "Half Marathon 21 Km (1,200 THB)" },
               { value: "full", label: "Full Marathon 42.195 Km (1,500 THB)" },
             ]}
-            {...mantineForm.getInputProps("plan")}
+            value={plan}
             onChange={(value) => {
-              mantineForm.setFieldValue("plan", value as any);
-              setPlan(value as any);
-              discountCupon(value as any, mantineForm.values.couponCode, mantineForm.values.haveCoupon);
+              if (value !== null) {
+                const v = value as "funrun" | "mini" | "half" | "full";
+                setPlan(value as "funrun" | "mini" | "half" | "full");
+                mantineForm.setFieldValue("plan", v);
+              }
+              discountCupon(value as "funrun" | "mini" | "half" | "full",couponCode,haveCoupon);
             }}
+            error={mantineForm.errors.plan}
           />
 
-          {/* Gender */}
-          <Radio.Group label="Gender" {...mantineForm.getInputProps("gender")}>
+          <Radio.Group
+            label="Gender"
+            value={gender}
+            onChange={(value) => {
+              if (value !== null) {
+                const v = value as "male" | "female";
+                setGender(v);
+                mantineForm.setFieldValue("gender", v);
+              }
+            }}
+            error={mantineForm.errors.gender}
+          >
             <Radio m={4} value="male" label="Male 👨" />
             <Radio m={4} value="female" label="Female 👩" />
           </Radio.Group>
 
-          {/* Coupon */}
           <Alert color="blue" title="Promotion 📢">
             Coupon (30% Discount)
           </Alert>
-          <Checkbox
-            label="I have coupon"
-            {...mantineForm.getInputProps("haveCoupon", { type: "checkbox" })}
-            onChange={(e) => {
-              mantineForm.setFieldValue("haveCoupon", e.currentTarget.checked);
+          <Checkbox label="I have coupon" 
+          onChange={
+            (e)=>{
               setHaveCoupon(e.currentTarget.checked);
-              discountCupon(
-                mantineForm.values.plan,
-                mantineForm.values.couponCode,
-                e.currentTarget.checked
-              );
-            }}
+              mantineForm.setFieldValue("haveCoupon", e.currentTarget.checked);
+              discountCupon(plan,couponCode,e.currentTarget.checked)
+            }
+          }
+          checked={haveCoupon}
           />
+          {haveCoupon && (<TextInput 
+          value={couponCode}
+          onChange={(e) => {
+            setCouponCode(e.currentTarget.value)
+            mantineForm.setFieldValue("couponCode",e.currentTarget.value)
+            // console.log(haveCoupon)
+          discountCupon(plan,e.currentTarget.value, haveCoupon)
+            // {mantineForm.getInputProps("coupon")}
+          }}
+          error = {mantineForm.errors.couponCode}
+          label="Coupon Code" />)}
 
-          {mantineForm.values.haveCoupon && (
-            <TextInput
-              label="Coupon Code"
-              {...mantineForm.getInputProps("couponCode")}
-              onChange={(e) => {
-                mantineForm.setFieldValue("couponCode", e.currentTarget.value);
-                setCouponCode(e.currentTarget.value);
-                discountCupon(
-                  mantineForm.values.plan,
-                  e.currentTarget.value,
-                  mantineForm.values.haveCoupon
-                );
-              }}
-            />
-          )}
-
-          {/* Total */}
-          <Text>Total Payment : {total} THB</Text>
+          {/* แสดงราคาการสมัครงานวิ่งตามแผนที่เลือก  */}
+          <Text>Total Payment : {total}THB</Text>
           <Divider my="xs" variant="dashed" />
-
-          {/* Terms & Conditions */}
           <Checkbox
             label={
               <>
@@ -188,10 +213,13 @@ export default function MarathonModal({ opened, onClose }: MarathonModalProps) {
                 </Text>
               </>
             }
-            {...mantineForm.getInputProps("agree", { type: "checkbox" })}
+            checked={agree}
+            onChange={(e) => {
+              setAgree(e.currentTarget.checked);
+              mantineForm.setFieldValue("agree", e.currentTarget.checked);
+            }}
+            error={mantineForm.errors.agree}
           />
-
-          {/* Submit */}
           <Button type="submit" disabled={!mantineForm.values.agree}>
             Register
           </Button>
